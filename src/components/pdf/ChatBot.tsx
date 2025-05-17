@@ -1,10 +1,9 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { MessageSquare } from "lucide-react";
 import { marked } from "marked";
-import { processMarkdownFormatting } from "@/utils/pdfUtils"; 
+import { processMarkdownFormatting } from "@/utils/pdf/formattingUtils"; 
 
 interface Message {
   role: "user" | "assistant";

@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import { Editor } from "@tinymce/tinymce-react";
 import { Button } from "@/components/ui/button";
@@ -349,7 +348,6 @@ export const NotesEditor = ({ notes, ocrText, onReturn }: NotesEditorProps) => {
               paste_merge_formats: false,
               lists_indent_on_tab: true,
               paste_as_text: false
-              // REMOVED duplicate paste_preprocess handler that was causing content to appear twice
             }}
           />
         </div>

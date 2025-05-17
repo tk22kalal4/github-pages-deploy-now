@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -68,17 +69,24 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
           messages: [
             {
               role: "system",
-              content: `You are a helpful assistant that answers questions about PDF content. Answer questions related to the provided OCR text.
-              
-              Format your answers using proper HTML formatting:
-              - Use <strong> tags for important keywords and concepts
-              - Use <ul><li> tags for bullet points with proper spacing
-              - Use <ol><li> tags for numbered lists
-              - Use proper line breaks between different parts of your answer
-              - DO NOT use markdown format like **bold text** - use <strong>bold text</strong> instead
-              
-              Here's the OCR extracted text for reference:
-              ${ocrText}`
+              content: `You are a helpful PDF assistant that answers questions about document content. Format your answers using proper HTML, not markdown.
+
+IMPORTANT FORMATTING INSTRUCTIONS:
+- Use <strong> tags for important terms, NOT ** symbols
+- Use <ul> and <li> tags for bullet points, NOT * or - symbols
+- Use <ol> and <li> tags for numbered lists
+- Ensure proper spacing between paragraphs with <p> tags
+- Use <h3> tags for section headings
+- Always close all HTML tags properly
+- Never use markdown formatting like **, *, -`
+            },
+            {
+              role: "user",
+              content: `Here's the PDF text to reference when answering questions:
+
+${ocrText}
+
+Please answer questions using ONLY HTML formatting, not markdown.`
             },
             ...messages.filter(m => m.role !== "assistant" || m.content !== "Thinking..."),
             {
@@ -86,7 +94,7 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
               content: input.trim()
             }
           ],
-          temperature: 0.3,
+          temperature: 0.2, // Lower temperature for more consistent output
           max_tokens: 1000
         })
       });
@@ -107,6 +115,8 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
       
       const data = await response.json();
       let aiResponse = data.choices[0].message.content;
+      
+      console.log("Raw ChatBot response:", aiResponse);
       
       // Process any markdown style formatting (**bold**) to proper HTML
       aiResponse = processMarkdownFormatting(aiResponse);
@@ -167,7 +177,7 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
                   }`}
                   dangerouslySetInnerHTML={{ 
                     __html: message.role === 'assistant' 
-                      ? marked.parse(message.content) 
+                      ? message.content 
                       : message.content 
                   }}
                 />

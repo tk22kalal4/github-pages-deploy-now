@@ -18,7 +18,7 @@ export const generateNotesFromText = async (ocrText: string): Promise<NotesResul
     
     console.log("Using Groq API to generate notes");
     
-    // Simplified prompt with clearer formatting instructions
+    // Improved prompt with clearer formatting instructions
     const response = await fetch(GROQ_API_URL, {
       method: 'POST',
       headers: {
@@ -29,26 +29,40 @@ export const generateNotesFromText = async (ocrText: string): Promise<NotesResul
         model: "meta-llama/llama-4-scout-17b-16e-instruct", 
         messages: [
           {
+            role: "system",
+            content: "You are a specialized notes formatter that creates clear, structured notes from text. Format your response using proper HTML tags, not markdown."
+          },
+          {
             role: "user",
             content: `Transform the following text into concise, well-structured point-wise notes. Make short points and use simple language where possible:
 
 ${ocrText}
 
 Guidelines for notes generation:
-- Organize content logically with proper hierarchy, proper sequence and proper relationship between headings, sub-headings and concepts.
-- Use clear section headings with <h1>, <h2> and <h3> tags with proper styling:
-  * <h1>: Dark red (rgb(71, 0, 0)) with <h1> tag, <strong> and underline
-  * <h2>: Dark blue (rgb(26, 1, 157)) with <h2> tag, <strong> and underline
-  * <h3>: Slate gray (rgb(52, 73, 94)) with <h3> tag, <strong> and underline
+- Organize content logically with proper hierarchy
+- For headings:
+  * Main headings: Use <h1> tags
+  * Sub-headings: Use <h2> tags
+  * Minor headings: Use <h3> tags
 - Break down complex concepts into digestible parts
-- Use bullet points (<ul> and <li>) for better readability
-- IMPORTANT: Use <strong> tags directly for bold text, not ** symbols
-- If there is any difference between concepts, make a table of it using (<table>,<tbody>,<tr>,<td>)
-- Include all relevant details, dates, numbers, and specific information`
+- Use bullet points with proper HTML tags: <ul><li>point 1</li><li>point 2</li></ul>
+- Use numbered lists with proper HTML tags: <ol><li>step 1</li><li>step 2</li></ol>
+- Use <strong> tags directly for important terms, DO NOT USE ** symbols
+- If there are contrasting concepts, create a table using proper HTML table tags
+- Include all relevant details, dates, numbers, and specific information
+- Ensure each bullet point and section is separated by proper spacing
+
+IMPORTANT: 
+- Use ONLY HTML formatting, not markdown
+- NO markdown asterisks for bold text
+- Always use <strong> tags for emphasis, not ** symbols
+- Ensure proper nesting of HTML tags
+- Each bullet point must be wrapped in <li> tags inside <ul> tags
+- Each numbered item must be wrapped in <li> tags inside <ol> tags`
           }
         ],
-        temperature: 0.3, // Lower temperature for more consistent formatting
-        max_tokens: 4000,  // Keep token limit high enough for complete coverage
+        temperature: 0.2, // Lower temperature for more consistent formatting
+        max_tokens: 4000,
       })
     });
     
@@ -65,6 +79,8 @@ Guidelines for notes generation:
     if (!notes || notes.trim().length === 0) {
       throw new Error("Empty response from Groq API");
     }
+    
+    console.log("Raw Groq response:", notes);
     
     // Process any remaining markdown style formatting (**bold**) to proper HTML
     notes = processMarkdownFormatting(notes);

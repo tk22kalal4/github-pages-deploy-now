@@ -30,11 +30,11 @@ export const generateNotesFromText = async (ocrText: string): Promise<NotesResul
         messages: [
           {
             role: "system",
-            content: "You are a specialized notes formatter that creates clear, structured notes from text. Format your response using proper HTML tags, not markdown."
+            content: "You are a specialized notes formatter that creates clear, structured notes from text. Format your response using proper HTML tags, not markdown. Use minimal spacing between elements for a compact presentation."
           },
           {
             role: "user",
-            content: `Transform the following text into concise, well-structured point-wise notes. Make short points and use simple language where possible:
+            content: `Transform the following text into concise, well-structured point-wise notes with minimal spacing. Make short points and use simple language where possible:
 
 ${ocrText}
 
@@ -50,7 +50,8 @@ Guidelines for notes generation:
 - Use <strong> tags directly for important terms, DO NOT USE ** symbols
 - If there are contrasting concepts, create a table using proper HTML table tags
 - Include all relevant details, dates, numbers, and specific information
-- Ensure each bullet point and section is separated by proper spacing
+- Use minimal spacing between bullet points and sections
+- Create compact, easy-to-read notes with minimal white space
 
 IMPORTANT: 
 - Use ONLY HTML formatting, not markdown
@@ -58,7 +59,8 @@ IMPORTANT:
 - Always use <strong> tags for emphasis, not ** symbols
 - Ensure proper nesting of HTML tags
 - Each bullet point must be wrapped in <li> tags inside <ul> tags
-- Each numbered item must be wrapped in <li> tags inside <ol> tags`
+- Each numbered item must be wrapped in <li> tags inside <ol> tags
+- Use minimal spacing between elements for a clean, compact presentation`
           }
         ],
         temperature: 0.2, // Lower temperature for more consistent formatting
@@ -126,7 +128,7 @@ IMPORTANT:
           if (paragraph.trim().length > 0) {
             // Process any markdown style formatting
             let processed = processMarkdownFormatting(paragraph.trim());
-            formattedHtml += `<p>${processed}</p>\n`;
+            formattedHtml += `<p>${processed}</p>`;
           }
         });
         
@@ -162,14 +164,14 @@ IMPORTANT:
                 .replace(/\b([A-Z][a-z]{2,}|[A-Z]{2,})\b/g, '<strong>$1</strong>')
                 .trim();
                 
-              formattedHtml += `<p>${processed}</p>\n`;
+              formattedHtml += `<p>${processed}</p>`;
             }
           });
         } else {
           // If no paragraphs were detected, preserve the raw content to ensure nothing is lost
           // Process any markdown style formatting
           const processed = processMarkdownFormatting(pageContent);
-          formattedHtml += `<p>${processed}</p>\n`;
+          formattedHtml += `<p>${processed}</p>`;
         }
       });
       

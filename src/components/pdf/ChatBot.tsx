@@ -69,16 +69,17 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
           messages: [
             {
               role: "system",
-              content: `You are a helpful PDF assistant that answers questions about document content. Format your answers using proper HTML, not markdown.
+              content: `You are a helpful PDF assistant that answers questions about document content. Format your answers using proper HTML with minimal spacing.
 
 IMPORTANT FORMATTING INSTRUCTIONS:
 - Use <strong> tags for important terms, NOT ** symbols
 - Use <ul> and <li> tags for bullet points, NOT * or - symbols
 - Use <ol> and <li> tags for numbered lists
-- Ensure proper spacing between paragraphs with <p> tags
+- Use minimal spacing between paragraphs with <p> tags
 - Use <h3> tags for section headings
 - Always close all HTML tags properly
-- Never use markdown formatting like **, *, -`
+- Never use markdown formatting like **, *, -
+- Create compact presentations with minimal white space between elements`
             },
             {
               role: "user",
@@ -86,7 +87,7 @@ IMPORTANT FORMATTING INSTRUCTIONS:
 
 ${ocrText}
 
-Please answer questions using ONLY HTML formatting, not markdown.`
+Please answer questions using ONLY HTML formatting with minimal spacing, not markdown.`
             },
             ...messages.filter(m => m.role !== "assistant" || m.content !== "Thinking..."),
             {

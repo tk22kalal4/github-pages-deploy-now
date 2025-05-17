@@ -14,7 +14,7 @@ export const processMarkdownFormatting = (text: string): string => {
   
   // Step 3: Wrap consecutive list items in ul tags
   processed = processed.replace(/(<li>.*?<\/li>\n)+/g, (match) => {
-    return '<ul>\n' + match + '</ul>\n\n';
+    return '<ul>\n' + match + '</ul>\n';
   });
   
   // Step 4: Handle numbered lists (1., 2., etc.)
@@ -23,25 +23,25 @@ export const processMarkdownFormatting = (text: string): string => {
   // Step 5: Wrap consecutive numbered list items in ol tags
   processed = processed.replace(/(<li>.*?<\/li>\n)+/g, (match) => {
     if (match.match(/^\s*\d+\.\s+/m)) { // Check if it's a numbered list
-      return '<ol>\n' + match + '</ol>\n\n';
+      return '<ol>\n' + match + '</ol>\n';
     }
     return match;
   });
   
-  // Step 6: Handle headers with appropriate styling
+  // Step 6: Handle headers with appropriate styling and reduced spacing
   processed = processed.replace(/^#+\s+(.+)$/gm, (match, content) => {
     const level = match.trim().split(' ')[0].length;
     if (level === 1) {
-      return `<h1><span style="text-decoration: underline;"><span style="color: rgb(71, 0, 0); text-decoration: underline;">${content}</span></span></h1>\n\n`;
+      return `<h1><span style="text-decoration: underline;"><span style="color: rgb(71, 0, 0); text-decoration: underline;">${content}</span></span></h1>\n`;
     } else if (level === 2) {
-      return `<h2><span style="text-decoration: underline;"><span style="color: rgb(26, 1, 157); text-decoration: underline;">${content}</span></span></h2>\n\n`;
+      return `<h2><span style="text-decoration: underline;"><span style="color: rgb(26, 1, 157); text-decoration: underline;">${content}</span></span></h2>\n`;
     } else if (level === 3) {
-      return `<h3><span style="text-decoration: underline;"><span style="color: rgb(52, 73, 94); text-decoration: underline;">${content}</span></span></h3>\n\n`;
+      return `<h3><span style="text-decoration: underline;"><span style="color: rgb(52, 73, 94); text-decoration: underline;">${content}</span></span></h3>\n`;
     }
     return match;
   });
   
-  // Step 7: Ensure proper paragraph spacing
+  // Step 7: Ensure proper paragraph spacing (reduced)
   processed = processed.replace(/\n{3,}/g, '\n\n'); // Limit consecutive newlines
   processed = processed.replace(/([^\n])\n([^\n])/g, '$1\n<br />$2'); // Single newlines become <br>
   
@@ -57,19 +57,19 @@ export const sanitizeHtml = (html: string): string => {
   
   // Fix list elements that might not be properly nested
   sanitized = sanitized
-    // Ensure lists are properly structured
-    .replace(/<li>(.+?)<\/li>\s*(?!<\/ul>|<\/ol>|<li>)/g, '<li>$1</li>\n</ul>\n\n<ul>\n')
+    // Ensure lists are properly structured with reduced spacing
+    .replace(/<li>(.+?)<\/li>\s*(?!<\/ul>|<\/ol>|<li>)/g, '<li>$1</li>\n</ul>\n<ul>\n')
     .replace(/<ul>\s*<\/ul>/g, '') // Remove empty lists
     
-    // Ensure proper line breaks after closing tags for better readability
-    .replace(/<\/(h[1-3])>/g, '</$1>\n\n')
-    .replace(/<\/(ul|ol)>/g, '</$1>\n\n')
+    // Ensure proper line breaks after closing tags with reduced spacing
+    .replace(/<\/(h[1-3])>/g, '</$1>\n')
+    .replace(/<\/(ul|ol)>/g, '</$1>\n')
     
     // Fix spacing issues and ensure proper paragraph breaks
     .replace(/>\s+</g, '>\n<')
     .replace(/<p>\s*<\/p>/g, '') // Remove empty paragraphs
     
-    // Fix nested lists by ensuring proper closing tags
+    // Fix nested lists by ensuring proper closing tags with proper spacing
     .replace(/<\/li><li>/g, '</li>\n<li>')
     
     // Fix potential unclosed strong tags
@@ -84,21 +84,21 @@ export const sanitizeHtml = (html: string): string => {
       return `<h${level}${attrs}>${content}`;
     })
     
-    // Clean up whitespace
-    .replace(/\n{3,}/g, '\n\n')
+    // Clean up whitespace - reduce excessive spacing
+    .replace(/\n{3,}/g, '\n')
     .replace(/ +/g, ' ')
     
-    // Ensure each paragraph has proper spacing
+    // Ensure each paragraph has proper spacing (reduced)
     .replace(/<p>/g, '\n<p>')
-    .replace(/<\/p>/g, '</p>\n\n')
+    .replace(/<\/p>/g, '</p>\n')
     
-    // Clean up bullet points for consistent formatting
-    .replace(/<ul>\s*<li>/g, '\n<ul>\n<li>')
-    .replace(/<\/li>\s*<\/ul>/g, '</li>\n</ul>\n\n')
+    // Clean up bullet points for consistent formatting with reduced spacing
+    .replace(/<ul>\s*<li>/g, '<ul>\n<li>')
+    .replace(/<\/li>\s*<\/ul>/g, '</li>\n</ul>\n')
     
-    // Clean up ordered lists for consistent formatting
-    .replace(/<ol>\s*<li>/g, '\n<ol>\n<li>')
-    .replace(/<\/li>\s*<\/ol>/g, '</li>\n</ol>\n\n')
+    // Clean up ordered lists for consistent formatting with reduced spacing
+    .replace(/<ol>\s*<li>/g, '<ol>\n<li>')
+    .replace(/<\/li>\s*<\/ol>/g, '</li>\n</ol>\n')
     
     // Ensure headings are properly formatted according to the template
     .replace(/<h1>\s*([^<]+)\s*<\/h1>/g, '<h1><span style="text-decoration: underline;"><span style="color: rgb(71, 0, 0); text-decoration: underline;">$1</span></span></h1>')
@@ -107,7 +107,14 @@ export const sanitizeHtml = (html: string): string => {
     
     // Fix any double-decorated headings
     .replace(/<h([1-3])><span style="text-decoration: underline;"><span style="color: rgb\([^)]+\); text-decoration: underline;">(<span style="text-decoration: underline;"><span style="color: rgb\([^)]+\); text-decoration: underline;">[^<]+<\/span><\/span>)<\/span><\/span><\/h\1>/g, 
-             '<h$1>$2</h$1>');
+             '<h$1>$2</h$1>')
+             
+    // Reduce spacing between sections
+    .replace(/(<\/h[1-3]>)\n+/g, '$1\n')
+    .replace(/(<\/ul>|<\/ol>)\n+/g, '$1\n')
+    .replace(/(<ul>|<ol>)\n+/g, '$1\n')
+    .replace(/<\/li>\n+<li>/g, '</li>\n<li>')
+    .replace(/\n{2,}/g, '\n');
 
   return sanitized;
 };

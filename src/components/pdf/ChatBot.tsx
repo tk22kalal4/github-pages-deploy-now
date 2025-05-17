@@ -1,8 +1,10 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { MessageSquare } from "lucide-react";
 import { marked } from "marked";
+import { processMarkdownFormatting } from "@/utils/pdfUtils"; 
 
 interface Message {
   role: "user" | "assistant";
@@ -51,7 +53,7 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
         position: "top-right"
       });
       
-      // Get the Groq API key from the existing code
+      // Get the Groq API key
       const GROQ_API_KEY = "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";
       const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
       
@@ -74,6 +76,7 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
               - Use <ul><li> tags for bullet points with proper spacing
               - Use <ol><li> tags for numbered lists
               - Use proper line breaks between different parts of your answer
+              - DO NOT use markdown format like **bold text** - use <strong>bold text</strong> instead
               
               Here's the OCR extracted text for reference:
               ${ocrText}`
@@ -84,7 +87,7 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
               content: input.trim()
             }
           ],
-          temperature: 0.5,
+          temperature: 0.3,
           max_tokens: 1000
         })
       });
@@ -104,7 +107,10 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
       }
       
       const data = await response.json();
-      const aiResponse = data.choices[0].message.content;
+      let aiResponse = data.choices[0].message.content;
+      
+      // Process any markdown style formatting (**bold**) to proper HTML
+      aiResponse = processMarkdownFormatting(aiResponse);
       
       // Add the AI response
       setMessages(prev => [...prev, { role: "assistant", content: aiResponse }]);

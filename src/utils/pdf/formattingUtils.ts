@@ -12,15 +12,15 @@ export const processMarkdownFormatting = (text: string): string => {
   // Step 2: Handle bullet points (* and - at start of lines)
   processed = processed.replace(/^\s*(\*|\-)\s+(.+)$/gm, '<li>$2</li>');
   
-  // Step 3: Wrap consecutive list items in ul tags
+  // Step 3: Wrap consecutive list items in ul tags - with minimal spacing
   processed = processed.replace(/(<li>.*?<\/li>\n)+/g, (match) => {
     return '<ul>\n' + match + '</ul>\n';
   });
   
-  // Step 4: Handle numbered lists (1., 2., etc.)
+  // Step 4: Handle numbered lists (1., 2., etc.) - with minimal spacing
   processed = processed.replace(/^\s*(\d+)\.\s+(.+)$/gm, '<li>$2</li>');
   
-  // Step 5: Wrap consecutive numbered list items in ol tags
+  // Step 5: Wrap consecutive numbered list items in ol tags - with minimal spacing
   processed = processed.replace(/(<li>.*?<\/li>\n)+/g, (match) => {
     if (match.match(/^\s*\d+\.\s+/m)) { // Check if it's a numbered list
       return '<ol>\n' + match + '</ol>\n';
@@ -28,7 +28,7 @@ export const processMarkdownFormatting = (text: string): string => {
     return match;
   });
   
-  // Step 6: Handle headers with appropriate styling and reduced spacing
+  // Step 6: Handle headers with appropriate styling and MINIMAL spacing
   processed = processed.replace(/^#+\s+(.+)$/gm, (match, content) => {
     const level = match.trim().split(' ')[0].length;
     if (level === 1) {
@@ -41,35 +41,36 @@ export const processMarkdownFormatting = (text: string): string => {
     return match;
   });
   
-  // Step 7: Ensure proper paragraph spacing (reduced)
-  processed = processed.replace(/\n{3,}/g, '\n\n'); // Limit consecutive newlines
-  processed = processed.replace(/([^\n])\n([^\n])/g, '$1\n<br />$2'); // Single newlines become <br>
+  // Step 7: DRASTICALLY reduce spacing - limit to single newlines maximum
+  processed = processed.replace(/\n{2,}/g, '\n'); // Replace multiple newlines with single
+  processed = processed.replace(/([^\n])\n([^\n])/g, '$1<br />$2'); // Single newlines become <br>
   
   return processed;
 };
 
 /**
  * Helper function to sanitize HTML and ensure it's valid for TinyMCE
+ * with MINIMAL spacing between elements
  */
 export const sanitizeHtml = (html: string): string => {
   // First process any markdown-style formatting
   let sanitized = processMarkdownFormatting(html);
   
-  // Fix list elements that might not be properly nested
+  // Fix list elements that might not be properly nested - with MINIMAL spacing
   sanitized = sanitized
-    // Ensure lists are properly structured with reduced spacing
+    // Ensure lists are properly structured with MINIMAL spacing
     .replace(/<li>(.+?)<\/li>\s*(?!<\/ul>|<\/ol>|<li>)/g, '<li>$1</li>\n</ul>\n<ul>\n')
     .replace(/<ul>\s*<\/ul>/g, '') // Remove empty lists
     
-    // Ensure proper line breaks after closing tags with reduced spacing
+    // Ensure proper line breaks after closing tags with MINIMAL spacing
     .replace(/<\/(h[1-3])>/g, '</$1>\n')
     .replace(/<\/(ul|ol)>/g, '</$1>\n')
     
-    // Fix spacing issues and ensure proper paragraph breaks
-    .replace(/>\s+</g, '>\n<')
+    // IMPORTANT: Fix excessive spacing issues by limiting consecutive line breaks
+    .replace(/>\s+</g, '>\n<') // Limit to single newline between tags
     .replace(/<p>\s*<\/p>/g, '') // Remove empty paragraphs
     
-    // Fix nested lists by ensuring proper closing tags with proper spacing
+    // Fix nested lists with proper spacing (minimal)
     .replace(/<\/li><li>/g, '</li>\n<li>')
     
     // Fix potential unclosed strong tags
@@ -84,19 +85,19 @@ export const sanitizeHtml = (html: string): string => {
       return `<h${level}${attrs}>${content}`;
     })
     
-    // Clean up whitespace - reduce excessive spacing
-    .replace(/\n{3,}/g, '\n')
-    .replace(/ +/g, ' ')
+    // DRASTICALLY reduce whitespace - eliminate excessive spacing
+    .replace(/\n{2,}/g, '\n') // Limit to single newlines
+    .replace(/ +/g, ' ') // Remove multiple spaces
     
-    // Ensure each paragraph has proper spacing (reduced)
-    .replace(/<p>/g, '\n<p>')
+    // Ensure each paragraph has MINIMAL spacing
+    .replace(/<p>/g, '<p>')
     .replace(/<\/p>/g, '</p>\n')
     
-    // Clean up bullet points for consistent formatting with reduced spacing
+    // Clean up bullet points for consistent formatting with MINIMAL spacing
     .replace(/<ul>\s*<li>/g, '<ul>\n<li>')
     .replace(/<\/li>\s*<\/ul>/g, '</li>\n</ul>\n')
     
-    // Clean up ordered lists for consistent formatting with reduced spacing
+    // Clean up ordered lists for consistent formatting with MINIMAL spacing
     .replace(/<ol>\s*<li>/g, '<ol>\n<li>')
     .replace(/<\/li>\s*<\/ol>/g, '</li>\n</ol>\n')
     
@@ -109,12 +110,16 @@ export const sanitizeHtml = (html: string): string => {
     .replace(/<h([1-3])><span style="text-decoration: underline;"><span style="color: rgb\([^)]+\); text-decoration: underline;">(<span style="text-decoration: underline;"><span style="color: rgb\([^)]+\); text-decoration: underline;">[^<]+<\/span><\/span>)<\/span><\/span><\/h\1>/g, 
              '<h$1>$2</h$1>')
              
-    // Reduce spacing between sections
+    // CRITICAL FIX: Drastically reduce spacing between all elements
     .replace(/(<\/h[1-3]>)\n+/g, '$1\n')
     .replace(/(<\/ul>|<\/ol>)\n+/g, '$1\n')
     .replace(/(<ul>|<ol>)\n+/g, '$1\n')
     .replace(/<\/li>\n+<li>/g, '</li>\n<li>')
-    .replace(/\n{2,}/g, '\n');
+    .replace(/\n{2,}/g, '\n')
+    // Remove excessive line breaks before closing tags
+    .replace(/\n+(<\/[^>]+>)/g, '$1')
+    // Remove excessive line breaks after opening tags
+    .replace(/(<[^\/][^>]*>)\n+/g, '$1');
 
   return sanitized;
 };

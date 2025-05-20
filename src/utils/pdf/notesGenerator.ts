@@ -18,7 +18,7 @@ export const generateNotesFromText = async (ocrText: string): Promise<NotesResul
     
     console.log("Using Groq API to generate notes");
     
-    // Improved prompt with clearer formatting instructions
+    // Improved prompt with clearer formatting instructions and MINIMAL spacing directive
     const response = await fetch(GROQ_API_URL, {
       method: 'POST',
       headers: {
@@ -30,40 +30,42 @@ export const generateNotesFromText = async (ocrText: string): Promise<NotesResul
         messages: [
           {
             role: "system",
-            content: "You are a specialized notes formatter that creates clear, structured notes from text. Format your response using proper HTML tags, not markdown. Use minimal spacing between elements for a compact presentation."
+            content: "You are a specialized notes formatter that creates clear, structured notes from text. Format your response using proper HTML tags, not markdown. Use MINIMAL spacing between elements - no extra line breaks or whitespace allowed."
           },
           {
             role: "user",
-            content: `Transform the following text into concise, well-structured point-wise notes with minimal spacing. Make short points and use simple language where possible:
+            content: `Transform the following text into compact, well-structured point-wise notes with MINIMAL spacing between elements. Make short points and use simple language where possible:
 
 ${ocrText}
 
-Guidelines for notes generation:
-- Organize content logically with proper hierarchy
+CRUCIAL FORMATTING RULES (FOLLOW EXACTLY):
+- Use MINIMAL spacing between ALL elements - no more than ONE line break between any elements
+- NO multiple blank lines anywhere in the output
+- Format with proper HTML only (no markdown)
 - For headings:
   * Main headings: Use <h1> tags
   * Sub-headings: Use <h2> tags
   * Minor headings: Use <h3> tags
-- Break down complex concepts into digestible parts
-- Use bullet points with proper HTML tags: <ul><li>point 1</li><li>point 2</li></ul>
-- Use numbered lists with proper HTML tags: <ol><li>step 1</li><li>step 2</li></ol>
-- Use <strong> tags directly for important terms, DO NOT USE ** symbols
-- If there are contrasting concepts, create a table using proper HTML table tags
-- Include all relevant details, dates, numbers, and specific information
-- Use minimal spacing between bullet points and sections
-- Create compact, easy-to-read notes with minimal white space
+- Use bullet points with proper HTML tags: <ul><li>point</li><li>point</li></ul>
+- Use numbered lists with proper HTML tags: <ol><li>step</li><li>step</li></ol>
+- Use <strong> tags for emphasis, NOT ** symbols
+- Make content compact and dense - eliminate unnecessary white space
+- Keep all content adjacent with minimal separation
+
+EXAMPLE OF CORRECT FORMATTING (note the minimal spacing):
+<h1><span style="text-decoration: underline;"><span style="color: rgb(71, 0, 0); text-decoration: underline;">Main Topic</span></span></h1>
+<p>Introduction text with <strong>emphasized points</strong>.</p>
+<h2><span style="text-decoration: underline;"><span style="color: rgb(26, 1, 157); text-decoration: underline;">Subtopic</span></span></h2>
+<ul><li>First point</li><li>Second point</li><li>Third point with <strong>emphasis</strong></li></ul>
+<p>Concluding text.</p>
 
 IMPORTANT: 
-- Use ONLY HTML formatting, not markdown
-- NO markdown asterisks for bold text
-- Always use <strong> tags for emphasis, not ** symbols
-- Ensure proper nesting of HTML tags
-- Each bullet point must be wrapped in <li> tags inside <ul> tags
-- Each numbered item must be wrapped in <li> tags inside <ol> tags
-- Use minimal spacing between elements for a clean, compact presentation`
+- Ensure your output has NO extra blank lines or excessive spacing
+- Keep elements compact and close together
+- Do NOT use markdown formatting - only HTML tags`
           }
         ],
-        temperature: 0.2, // Lower temperature for more consistent formatting
+        temperature: 0.1, // Lower temperature for more consistent formatting
         max_tokens: 4000,
       })
     });
@@ -97,7 +99,7 @@ IMPORTANT:
       });
     }
     
-    // Sanitize the notes to ensure valid HTML
+    // Sanitize the notes to ensure valid HTML with MINIMAL spacing
     const sanitizedNotes = sanitizeHtml(notes);
     
     return { notes: sanitizedNotes };
@@ -175,7 +177,8 @@ IMPORTANT:
         }
       });
       
-      return formattedHtml;
+      // Finally, apply the sanitizeHtml function to ensure MINIMAL spacing
+      return sanitizeHtml(formattedHtml);
     };
     
     return { notes: createFormattedNotes(ocrText) };

@@ -57,7 +57,7 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
       const GROQ_API_KEY = "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";
       const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
       
-      // Prepare the request to Groq API with improved prompt
+      // Prepare the request to Groq API with improved prompt for MINIMAL spacing
       const response = await fetch(GROQ_API_URL, {
         method: 'POST',
         headers: {
@@ -69,17 +69,16 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
           messages: [
             {
               role: "system",
-              content: `You are a helpful PDF assistant that answers questions about document content. Format your answers using proper HTML with minimal spacing.
+              content: `You are a helpful PDF assistant that answers questions about document content. Format your answers using proper HTML with ABSOLUTELY MINIMAL spacing between elements.
 
-IMPORTANT FORMATTING INSTRUCTIONS:
+CRITICAL FORMATTING INSTRUCTIONS:
+- Use ONLY HTML formatting with NO extra blank lines or spaces between elements
 - Use <strong> tags for important terms, NOT ** symbols
 - Use <ul> and <li> tags for bullet points, NOT * or - symbols
 - Use <ol> and <li> tags for numbered lists
-- Use minimal spacing between paragraphs with <p> tags
-- Use <h3> tags for section headings
-- Always close all HTML tags properly
-- Never use markdown formatting like **, *, -
-- Create compact presentations with minimal white space between elements`
+- Use NO extra spacing between elements - keep content compact and dense
+- Avoid multiple consecutive line breaks anywhere in your answer
+- Always close all HTML tags properly`
             },
             {
               role: "user",
@@ -87,7 +86,13 @@ IMPORTANT FORMATTING INSTRUCTIONS:
 
 ${ocrText}
 
-Please answer questions using ONLY HTML formatting with minimal spacing, not markdown.`
+Please answer questions using ONLY HTML formatting with MINIMAL spacing - no extra blank lines.
+
+EXAMPLE of correct output structure (note the compact format with no extra spacing):
+<h3>Answer Title</h3>
+<p>Main explanation with <strong>key terms</strong> highlighted.</p>
+<ul><li>First point</li><li>Second point</li><li>Third point with <strong>important note</strong></li></ul>
+<p>Conclusion text.</p>`
             },
             ...messages.filter(m => m.role !== "assistant" || m.content !== "Thinking..."),
             {
@@ -95,7 +100,7 @@ Please answer questions using ONLY HTML formatting with minimal spacing, not mar
               content: input.trim()
             }
           ],
-          temperature: 0.2, // Lower temperature for more consistent output
+          temperature: 0.1, // Lower temperature for more consistent output
           max_tokens: 1000
         })
       });

@@ -12,23 +12,23 @@ export const processMarkdownFormatting = (text: string): string => {
   // Step 2: Handle bullet points (* and - at start of lines)
   processed = processed.replace(/^\s*(\*|\-)\s+(.+)$/gm, '<li>$2</li>');
   
-  // Step 3: Wrap consecutive list items in ul tags with NO spacing
+  // Step 3: Wrap consecutive list items in ul tags with proper spacing
   processed = processed.replace(/(<li>.*?<\/li>\n)+/g, (match) => {
-    return '<ul>' + match.replace(/\n/g, '') + '</ul>';
+    return '<ul>' + match + '</ul>';
   });
   
-  // Step 4: Handle numbered lists (1., 2., etc.) with NO spacing
+  // Step 4: Handle numbered lists (1., 2., etc.)
   processed = processed.replace(/^\s*(\d+)\.\s+(.+)$/gm, '<li>$2</li>');
   
-  // Step 5: Wrap consecutive numbered list items in ol tags with NO spacing
+  // Step 5: Wrap consecutive numbered list items in ol tags
   processed = processed.replace(/(<li>.*?<\/li>\n)+/g, (match) => {
     if (match.match(/^\s*\d+\.\s+/m)) { // Check if it's a numbered list
-      return '<ol>' + match.replace(/\n/g, '') + '</ol>';
+      return '<ol>' + match + '</ol>';
     }
     return match;
   });
   
-  // Step 6: Handle headers with appropriate styling and NO spacing
+  // Step 6: Handle headers with appropriate styling
   processed = processed.replace(/^#+\s+(.+)$/gm, (match, content) => {
     const level = match.trim().split(' ')[0].length;
     if (level === 1) {
@@ -41,35 +41,24 @@ export const processMarkdownFormatting = (text: string): string => {
     return match;
   });
   
-  // Step 7: DRASTICALLY reduce spacing - eliminate all newlines between elements
-  processed = processed.replace(/\n{1,}/g, ''); // Replace ALL newlines
-  
   return processed;
 };
 
 /**
  * Helper function to sanitize HTML and ensure it's valid for TinyMCE
- * with ABSOLUTELY NO spacing between elements
+ * with minimal formatting changes
  */
 export const sanitizeHtml = (html: string): string => {
   // First process any markdown-style formatting
   let sanitized = processMarkdownFormatting(html);
   
-  // Fix list elements that might not be properly nested - with NO spacing
+  // Fix list elements that might not be properly nested
   sanitized = sanitized
-    // Ensure lists are properly structured with NO spacing
+    // Ensure lists are properly structured
     .replace(/<li>(.+?)<\/li>\s*(?!<\/ul>|<\/ol>|<li>)/g, '<li>$1</li></ul><ul>')
     .replace(/<ul>\s*<\/ul>/g, '') // Remove empty lists
     
-    // Ensure NO line breaks after closing tags
-    .replace(/<\/(h[1-3])>\s*/g, '</$1>')
-    .replace(/<\/(ul|ol)>\s*/g, '</$1>')
-    
-    // CRUCIAL: Eliminate ALL spacing between elements
-    .replace(/>\s+</g, '><') // Remove ALL spaces between tags
-    .replace(/<p>\s*<\/p>/g, '') // Remove empty paragraphs
-    
-    // Fix nested lists with NO spacing
+    // Fix nested lists
     .replace(/<\/li><li>/g, '</li><li>')
     
     // Fix potential unclosed strong tags
@@ -84,19 +73,11 @@ export const sanitizeHtml = (html: string): string => {
       return `<h${level}${attrs}>${content}`;
     })
     
-    // ELIMINATE all whitespace
-    .replace(/\s{2,}/g, ' ') // Replace multiple spaces with single space
-    .replace(/\n/g, '') // Remove ALL newlines
-    
-    // Ensure minimal spacing for paragraphs
-    .replace(/<p>/g, '<p>')
-    .replace(/<\/p>/g, '</p>')
-    
-    // Clean up bullet points for consistent formatting with NO spacing
+    // Clean up bullet points for consistent formatting
     .replace(/<ul>\s*<li>/g, '<ul><li>')
     .replace(/<\/li>\s*<\/ul>/g, '</li></ul>')
     
-    // Clean up ordered lists for consistent formatting with NO spacing
+    // Clean up ordered lists for consistent formatting
     .replace(/<ol>\s*<li>/g, '<ol><li>')
     .replace(/<\/li>\s*<\/ol>/g, '</li></ol>')
     
@@ -107,11 +88,7 @@ export const sanitizeHtml = (html: string): string => {
     
     // Fix any double-decorated headings
     .replace(/<h([1-3])><span style="text-decoration: underline;"><span style="color: rgb\([^)]+\); text-decoration: underline;">(<span style="text-decoration: underline;"><span style="color: rgb\([^)]+\); text-decoration: underline;">[^<]+<\/span><\/span>)<\/span><\/span><\/h\1>/g, 
-             '<h$1>$2</h$1>')
-             
-    // CRITICAL FIX: Remove ALL spacing between elements
-    .replace(/>\s+</g, '><');
+             '<h$1>$2</h$1>');
 
   return sanitized;
 };
-

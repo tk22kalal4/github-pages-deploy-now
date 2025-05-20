@@ -6,7 +6,6 @@ export const getEditorConfig = (
   return {
     height: "100%",
     menubar: true,
-    readonly: false,
     plugins: [
       'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 
       'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
@@ -176,18 +175,9 @@ export const getEditorConfig = (
     convert_urls: false,
     valid_children: "+body[style],+body[link]",
     invalid_elements: '',
-    force_br_newlines: false,
-    force_p_newlines: true,
-    forced_root_block: 'p',
     indent: true,
     indent_use_margin: true,
-    indent_margin: true,
-    paste_enable_default_filters: true,
-    paste_word_valid_elements: "b,strong,i,em,h1,h2,h3,h4,h5,h6,p,ul,ol,li,table,tr,td,th,div,span,pre,code",
-    paste_retain_style_properties: "color,font-size,font-family,background-color",
-    paste_webkit_styles: "color,font-size,font-family,background-color",
-    paste_merge_formats: false,
-    lists_indent_on_tab: true,
-    paste_as_text: false
+    indent_margin: true
   };
 };
+

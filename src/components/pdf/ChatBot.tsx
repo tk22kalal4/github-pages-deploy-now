@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Key } from "lucide-react";
 import { marked } from "marked";
 import { processMarkdownFormatting } from "@/utils/pdf/formattingUtils"; 
 
@@ -22,6 +22,10 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
   ]);
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [apiKey, setApiKey] = useState(() => {
+    return localStorage.getItem('groq_api_key') || "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";
+  });
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -29,10 +33,26 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  useEffect(() => {
+    // Save API key to localStorage when it changes
+    if (apiKey) {
+      localStorage.setItem('groq_api_key', apiKey);
+    }
+  }, [apiKey]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!input.trim() || isProcessing) return;
+    
+    if (!apiKey.trim()) {
+      toast.error("Please enter your Groq API key first", {
+        duration: 3000,
+        position: "top-right"
+      });
+      setShowApiKeyInput(true);
+      return;
+    }
     
     // Add user message
     const userMessage = { role: "user" as const, content: input.trim() };
@@ -49,44 +69,40 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
       
       // Show loading toast with auto-dismiss
       loadingToastId = toast.loading("Processing your question...", {
-        duration: 10000, // Maximum duration if not manually dismissed
+        duration: 10000,
         position: "top-right"
       });
       
-      // Generate a response locally instead of using the Groq API
-      const generateLocalResponse = (userInput: string, pdfText: string) => {
-        // Simple keyword-based response system
-        const input = userInput.toLowerCase();
-        let response = "";
-        
-        // Check for common questions
-        if (input.includes("what") && (input.includes("about") || input.includes("is") || input.includes("are"))) {
-          response = "<h3>PDF Content Summary</h3><p>The PDF discusses <strong>Locally Advanced Carcinoma of Breast (LACB)</strong>, which is a locally advanced tumor with specific characteristics.</p>";
-          
-          // Add more context based on keywords
-          if (input.includes("treatment") || input.includes("therapy")) {
-            response += "<h3>Treatment Options</h3><p>Treatment typically involves:</p><ul><li>Neoadjuvant chemotherapy</li><li>Mastectomy (total or modified radical)</li><li>Radiotherapy</li><li>Hormone therapy</li></ul><p>The treatment approach is often targeted as curative, but is only achieved in about 50% of patients.</p>";
-          }
-          
-          if (input.includes("survival") || input.includes("prognosis")) {
-            response += "<p>With proper therapy, the 5-year survival rate is approximately 50%, while the 10-year survival rate is about 25% or less.</p>";
-          }
-          
-          if (input.includes("chemotherapy")) {
-            response += "<h3>Chemotherapy Details</h3><p>Neoadjuvant (anterior) chemotherapy is given to down-stage and achieve cytoreduction, target possible micrometastases, and assess chemosensitivity. Regimes like FEC, CMF, and CAF are commonly used.</p>";
-          }
-        } else if (input.includes("define") || input.includes("what is") || input.includes("meaning")) {
-          response = "<h3>Definition</h3><p><strong>Locally Advanced Carcinoma of Breast (LACB)</strong> refers to a locally advanced tumor with muscle/chest wall involvement, extensive skin involvement, or fixed axillary nodes. It is classified as T3, T4a, T4b, T4c, T4d, or N2 LACB, corresponding to stage IIB and III disease.</p>";
-        } else {
-          // Default response with PDF summary
-          response = "<h3>PDF Content Overview</h3><p>The PDF covers <strong>Locally Advanced Carcinoma of Breast (LACB)</strong>, including its definition, classification, investigation methods, and treatment options.</p><p>Key aspects include:</p><ul><li>Definition and staging of LACB</li><li>Investigation methods including FNAC, mammography, and scans</li><li>Treatment approaches including neoadjuvant chemotherapy, surgery, radiotherapy, and hormone therapy</li><li>Survival rates and prognosis details</li></ul><p>Please ask a more specific question about the PDF content if you need more detailed information.</p>";
-        }
-        
-        return response;
-      };
-      
-      // Get a local response
-      const aiResponse = generateLocalResponse(input, ocrText);
+      // Call Groq API
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama3-8b-8192',
+          messages: [
+            {
+              role: 'system',
+              content: `You are a helpful assistant that answers questions about PDF content. Here is the PDF content to reference: ${ocrText.substring(0, 4000)}...`
+            },
+            {
+              role: 'user',
+              content: input
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 1000,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Groq API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const aiResponse = data.choices[0]?.message?.content || "Sorry, I couldn't generate a response.";
       
       // Always dismiss the loading toast regardless of outcome
       if (loadingToastId) {
@@ -107,7 +123,7 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
       // Remove the "thinking" message
       setMessages(prev => prev.filter(m => m.content !== "Thinking..."));
       // Add error message
-      setMessages(prev => [...prev, { role: "assistant", content: "Sorry, I encountered an error while processing your question. Please try again." }]);
+      setMessages(prev => [...prev, { role: "assistant", content: "Sorry, I encountered an error while processing your question. Please check your API key and try again." }]);
       
       // Dismiss any previous toast and show error
       if (loadingToastId) {
@@ -123,10 +139,43 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
     <div className="flex flex-col h-full border-l">
       <div className="p-4 border-b flex justify-between items-center bg-slate-50">
         <h3 className="text-lg font-medium">PDF Chat Assistant</h3>
-        <Button variant="outline" size="sm" onClick={onClose}>
-          Close
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowApiKeyInput(!showApiKeyInput)}
+          >
+            <Key className="w-4 h-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={onClose}>
+            Close
+          </Button>
+        </div>
       </div>
+      
+      {showApiKeyInput && (
+        <div className="p-4 border-b bg-yellow-50">
+          <label className="block text-sm font-medium mb-2">Groq API Key:</label>
+          <div className="flex gap-2">
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="Enter your Groq API key"
+              className="flex-grow px-3 py-2 border rounded-md text-sm"
+            />
+            <Button 
+              size="sm" 
+              onClick={() => setShowApiKeyInput(false)}
+            >
+              Save
+            </Button>
+          </div>
+          <p className="text-xs text-gray-600 mt-1">
+            Your API key is stored locally and not shared with anyone.
+          </p>
+        </div>
+      )}
       
       <div className="flex-grow overflow-auto p-4 space-y-4">
         {messages.map((message, index) => (
@@ -184,4 +233,3 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
     </div>
   );
 };
-

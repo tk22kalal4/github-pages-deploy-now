@@ -85,7 +85,7 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
           messages: [
             {
               role: 'system',
-              content: `You are a helpful assistant that answers questions about PDF content. Here is the PDF content to reference: ${ocrText.substring(0, 4000)}...`
+              content: `You are a helpful assistant that answers questions about PDF content and related to pdf content which are not in pdf content. Here is the PDF content to reference: ${ocrText.substring(0, 4000)}...`
             },
             {
               role: 'user',
@@ -93,7 +93,7 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
             }
           ],
           temperature: 0.7,
-          max_tokens: 1000,
+          max_tokens: 2000,
         }),
       });
 

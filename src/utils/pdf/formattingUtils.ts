@@ -9,86 +9,95 @@ export const processMarkdownFormatting = (text: string): string => {
   // Step 1: Convert **text** to <strong>text</strong>
   let processed = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   
-  // Step 2: Handle bullet points (* and - at start of lines)
-  processed = processed.replace(/^\s*(\*|\-)\s+(.+)$/gm, '<li>$2</li>');
-  
-  // Step 3: Wrap consecutive list items in ul tags with proper spacing
-  processed = processed.replace(/(<li>.*?<\/li>\n)+/g, (match) => {
-    return '<ul>' + match + '</ul>';
+  // Step 2: Handle multi-level bullet points (*, -, •) with proper indentation
+  processed = processed.replace(/^(\s*)(\*|\-|•)\s+(.+)$/gm, (match, indent, bullet, content) => {
+    const level = Math.floor(indent.length / 2) + 1; // Calculate nesting level
+    const marginLeft = (level - 1) * 20; // Indentation for nested lists
+    return `<li style="margin-left: ${marginLeft}px; list-style-type: disc;">${content.trim()}</li>`;
   });
   
-  // Step 4: Handle numbered lists (1., 2., etc.)
-  processed = processed.replace(/^\s*(\d+)\.\s+(.+)$/gm, '<li>$2</li>');
+  // Step 3: Handle numbered lists (1., 2., etc.) with proper indentation
+  processed = processed.replace(/^(\s*)(\d+)\.\s+(.+)$/gm, (match, indent, number, content) => {
+    const level = Math.floor(indent.length / 2) + 1;
+    const marginLeft = (level - 1) * 20;
+    return `<li style="margin-left: ${marginLeft}px; list-style-type: decimal;">${content.trim()}</li>`;
+  });
   
-  // Step 5: Wrap consecutive numbered list items in ol tags
-  processed = processed.replace(/(<li>.*?<\/li>\n)+/g, (match) => {
-    if (match.match(/^\s*\d+\.\s+/m)) { // Check if it's a numbered list
-      return '<ol>' + match + '</ol>';
+  // Step 4: Wrap consecutive list items in proper ul/ol tags
+  processed = processed.replace(/(<li[^>]*>.*?<\/li>\s*)+/g, (match) => {
+    // Check if it's a numbered list by looking for decimal list-style-type
+    if (match.includes('list-style-type: decimal')) {
+      return `<ol style="padding-left: 20px; margin-bottom: 12px;">${match}</ol>`;
+    } else {
+      return `<ul style="padding-left: 20px; margin-bottom: 12px;">${match}</ul>`;
     }
-    return match;
   });
   
-  // Step 6: Handle headers with appropriate styling
-  processed = processed.replace(/^#+\s+(.+)$/gm, (match, content) => {
-    const level = match.trim().split(' ')[0].length;
+  // Step 5: Handle headers with appropriate styling
+  processed = processed.replace(/^(#{1,6})\s+(.+)$/gm, (match, hashes, content) => {
+    const level = hashes.length;
     if (level === 1) {
-      return `<h1><span style="text-decoration: underline;"><span style="color: rgb(71, 0, 0); text-decoration: underline;">${content}</span></span></h1>`;
+      return `<h1><span style="text-decoration: underline; color: rgb(71, 0, 0);">${content}</span></h1>`;
     } else if (level === 2) {
-      return `<h2><span style="text-decoration: underline;"><span style="color: rgb(26, 1, 157); text-decoration: underline;">${content}</span></span></h2>`;
+      return `<h2><span style="text-decoration: underline; color: rgb(26, 1, 157);">${content}</span></h2>`;
     } else if (level === 3) {
-      return `<h3><span style="text-decoration: underline;"><span style="color: rgb(52, 73, 94); text-decoration: underline;">${content}</span></span></h3>`;
+      return `<h3><span style="text-decoration: underline; color: rgb(52, 73, 94);">${content}</span></h3>`;
+    } else if (level === 4) {
+      return `<h4><span style="text-decoration: underline; color: rgb(85, 85, 85);">${content}</span></h4>`;
+    } else if (level === 5) {
+      return `<h5><span style="text-decoration: underline; color: rgb(119, 119, 119);">${content}</span></h5>`;
+    } else {
+      return `<h6><span style="text-decoration: underline; color: rgb(153, 153, 153);">${content}</span></h6>`;
     }
-    return match;
   });
+  
+  // Step 6: Handle line breaks and paragraphs
+  processed = processed.replace(/\n\n+/g, '</p><p>');
+  processed = processed.replace(/\n/g, '<br>');
   
   return processed;
 };
 
 /**
  * Helper function to sanitize HTML and ensure it's valid for TinyMCE
- * with minimal formatting changes
+ * with proper formatting preservation
  */
 export const sanitizeHtml = (html: string): string => {
   // First process any markdown-style formatting
-  let sanitized = processMarkdownFormatting(html);
+  let sanitized = html;
   
-  // Fix list elements that might not be properly nested
+  // Fix nested list elements and ensure proper structure
   sanitized = sanitized
-    // Ensure lists are properly structured
-    .replace(/<li>(.+?)<\/li>\s*(?!<\/ul>|<\/ol>|<li>)/g, '<li>$1</li></ul><ul>')
-    .replace(/<ul>\s*<\/ul>/g, '') // Remove empty lists
+    // Clean up any malformed list structures
+    .replace(/<\/ul><ul[^>]*>/g, '')
+    .replace(/<\/ol><ol[^>]*>/g, '')
     
-    // Fix nested lists
-    .replace(/<\/li><li>/g, '</li><li>')
+    // Ensure proper paragraph structure
+    .replace(/<p>\s*<\/p>/g, '') // Remove empty paragraphs
+    .replace(/<p>(<ul|<ol|<h[1-6])/g, '$1') // Remove p tags before lists and headers
+    .replace(/(<\/ul>|<\/ol>|<\/h[1-6]>)<\/p>/g, '$1') // Remove p tags after lists and headers
     
-    // Fix potential unclosed strong tags
-    .replace(/<strong>([^<]*)<strong>/g, '<strong>$1</strong>')
+    // Fix list item spacing
+    .replace(/<li([^>]*)>\s*<br>\s*/g, '<li$1>')
+    .replace(/\s*<br>\s*<\/li>/g, '</li>')
     
-    // Fix nested strong tags
-    .replace(/<strong>([^<]*)<strong>([^<]*)<\/strong>([^<]*)<\/strong>/g, '<strong>$1$2$3</strong>')
+    // Ensure headers are properly closed
+    .replace(/<h([1-6])([^>]*)>([^<]*?)(?=<h|<p|<ul|<ol|$)/gi, '<h$1$2>$3</h$1>')
     
-    // Make sure headings have both opening and closing tags
-    .replace(/<h([1-6])([^>]*)>([^<]*)/gi, (match, level, attrs, content) => {
-      if (!content.trim()) return match;
-      return `<h${level}${attrs}>${content}`;
-    })
+    // Fix strong tags
+    .replace(/<strong>([^<]*?)<strong>/g, '<strong>$1</strong>')
+    .replace(/<\/strong>([^<]*?)<\/strong>/g, '</strong>$1</strong>')
     
-    // Clean up bullet points for consistent formatting
-    .replace(/<ul>\s*<li>/g, '<ul><li>')
-    .replace(/<\/li>\s*<\/ul>/g, '</li></ul>')
+    // Clean up spacing around elements
+    .replace(/\s+<\/li>/g, '</li>')
+    .replace(/<li[^>]*>\s+/g, match => match.replace(/\s+$/, ''))
     
-    // Clean up ordered lists for consistent formatting
-    .replace(/<ol>\s*<li>/g, '<ol><li>')
-    .replace(/<\/li>\s*<\/ol>/g, '</li></ol>')
+    // Ensure proper paragraph wrapping for non-list, non-header content
+    .replace(/^(?!<[huo]|<li)([^<\n].+?)$/gm, '<p>$1</p>')
     
-    // Ensure headings are properly formatted according to the template
-    .replace(/<h1>\s*([^<]+)\s*<\/h1>/g, '<h1><span style="text-decoration: underline;"><span style="color: rgb(71, 0, 0); text-decoration: underline;">$1</span></span></h1>')
-    .replace(/<h2>\s*([^<]+)\s*<\/h2>/g, '<h2><span style="text-decoration: underline;"><span style="color: rgb(26, 1, 157); text-decoration: underline;">$1</span></span></h2>')
-    .replace(/<h3>\s*([^<]+)\s*<\/h3>/g, '<h3><span style="text-decoration: underline;"><span style="color: rgb(52, 73, 94); text-decoration: underline;">$1</span></span></h3>')
-    
-    // Fix any double-decorated headings
-    .replace(/<h([1-3])><span style="text-decoration: underline;"><span style="color: rgb\([^)]+\); text-decoration: underline;">(<span style="text-decoration: underline;"><span style="color: rgb\([^)]+\); text-decoration: underline;">[^<]+<\/span><\/span>)<\/span><\/span><\/h\1>/g, 
-             '<h$1>$2</h$1>');
+    // Clean up any double paragraph tags
+    .replace(/<p><p>/g, '<p>')
+    .replace(/<\/p><\/p>/g, '</p>');
 
   return sanitized;
 };

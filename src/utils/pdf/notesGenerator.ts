@@ -12,7 +12,7 @@ export interface NotesResult {
  * @returns The formatted notes
  */
 export const generateNotesFromText = async (ocrText: string): Promise<NotesResult> => {
-  const GROQ_API_KEY = "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";
+  const GROQ_API_KEY = "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";
   
   try {
     console.log("Generating notes using Groq API...");

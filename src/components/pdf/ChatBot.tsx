@@ -23,7 +23,7 @@ export const ChatBot = ({ ocrText, onClose }: ChatBotProps) => {
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [apiKey, setApiKey] = useState(() => {
-    return localStorage.getItem('groq_api_key') || "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";
+    return localStorage.getItem('groq_api_key') || "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";
   });
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);

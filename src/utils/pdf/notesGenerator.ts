@@ -7,7 +7,7 @@ export interface NotesResult {
 }
 
 /**
- * Converts OCR text to notes using Groq API
+ * Converts OCR text to notes using Groq AP
  * @param ocrText The text from OCR
  * @returns The formatted notes
  */
